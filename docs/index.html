@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Titia Fofa Simulation</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    pre { background: #f4f4f4; padding: 10px; border-radius: 4px; }
+    button { padding: 8px 12px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Titia Fofa Simulation</h1>
+  <p>Clique no botão abaixo para executar a simulação no navegador.</p>
+  <button id="run">Rodar Simulação</button>
+  <pre id="output"></pre>
+  <script type="module">
+    import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.mjs";
+
+    async function runSim() {
+      const pyodide = await loadPyodide();
+      const outputEl = document.getElementById('output');
+      // Redireciona stdout para capturar o resultado
+      await pyodide.runPythonAsync(`
+import sys, io
+sys.stdout = io.StringIO()
+`);
+      // Carrega os arquivos Python
+      const [titia, main] = await Promise.all([
+        fetch('../titia_fofa.py').then(r => r.text()),
+        fetch('../main.py').then(r => r.text()),
+      ]);
+      pyodide.FS.writeFile('titia_fofa.py', titia);
+      pyodide.FS.writeFile('main.py', main);
+      await pyodide.runPythonAsync("import main\nmain.simular_dia()");
+      const result = await pyodide.runPythonAsync('sys.stdout.getvalue()');
+      outputEl.textContent = result;
+    }
+
+    document.getElementById('run').addEventListener('click', runSim);
+  </script>
+</body>
+</html>
